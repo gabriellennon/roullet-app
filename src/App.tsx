@@ -1,7 +1,4 @@
-import { Settings, User } from 'lucide-react'
 import './App.css'
-import SpinWheel from './components/SpinWheel'
-import { ButtonIcon } from './components/ButtonIcon'
 import {
   Sheet,
   SheetClose,
@@ -10,9 +7,8 @@ import {
   SheetFooter,
   SheetHeader,
   SheetTitle,
-  SheetTrigger,
 } from "@/components/ui/sheet"
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
@@ -29,14 +25,19 @@ import {
   FormItem,
   FormMessage,
 } from "@/components/ui/form"
+import toast, { Toaster } from 'react-hot-toast';
 import { Input } from './components/ui/input'
+import { HeaderSheet } from './components/HeaderSheet'
+import { SpinWheel } from './components/SpinWheel'
+import { formatArrayForTextArea, transformArrayToString } from './utils/utils'
+import { Badge } from './components/ui/badge'
 
 const INITIAL_VALUES = {
   backgroundColorGeral: '#00875F',
   backgroundColorRoullet: '#202024',
   titleRoullet: 'Gire a roleta',
   subtitleRoullet: 'E garanta o seu prêmio!',
-  names: []
+  names: ['10','0','100','150','800','40','300','10']
 }
 
 function App() {
@@ -62,23 +63,41 @@ function App() {
   })
 
   function onSubmit(values: z.infer<typeof roulletConfigSchema>) {
+    // ANtes de salvar verificar text area usando essa funcao
+    // console.log(currentValue.includes('\n' || ' '));
+    if(values.names!.length < 8){
+      toast.error("Opa! 🤔 Os nomes do itens na roleta estão abaixo de 8, por favor adicione até estar os 8.")
+    }
     console.log(values)
+  }
+
+  // function transformArray(e: React.KeyboardEvent<HTMLTextAreaElement>){
+  //   const backspaceNoPressed = e.key !== "Backspace";
+  //   const currentValue = e.currentTarget.value;
+  //   const namesArray: string[] = [];
+
+  //   if(backspaceNoPressed) {
+  //     const lengthNoSpaces = currentValue.replace(/ /g,"").length;
+  //     if ( lengthNoSpaces !== 0 && lengthNoSpaces % 4 === 0) {
+  //       namesArray.push(...namesArray, currentValue)
+  //       form.setValue('names', transformArrayToString(namesArray))
+  //     }
+  //   }
+  // }
+
+  function transformArray(e: React.ChangeEvent<HTMLTextAreaElement>) {
+    const currentValue = e.target.value;
+    const namesArray = currentValue.split('\n');
+    const valueToSave = namesArray.length === 1 && !namesArray[0].length ? null : transformArrayToString(namesArray);
+    form.setValue('names', valueToSave);
+    return valueToSave;
   }
 
   return (
     <main className='bg-[#00875F] min-h-screen flex flex-1 items-end justify-center flex-col px-12'>
       <Form {...form}>
         <Sheet>
-          <div className='bg-[#202024] rounded-3xl px-[18px] py-[10px] flex items-center justify-center gap-4 mt-4'>
-            <SheetTrigger asChild>
-              <Button variant="outline" size="icon" className='transition ease-in-out delay-150 bg-transparent border-none hover:bg-transparent hover:opacity-75'>
-                <Settings color='#E1E1E6'/>
-              </Button>
-            </SheetTrigger>
-            <ButtonIcon title='profile'>
-              <User color='#E1E1E6' />
-            </ButtonIcon>
-          </div>
+          <HeaderSheet />
           <div 
             className='bg-[#202024] flex flex-1 flex-col items-center justify-center w-full max-w-[1340px] h-[calc(100vh - 10rem)] mt-4 mb-20 mx-auto rounded-lg'
           >
@@ -88,9 +107,9 @@ function App() {
                 <p className='text-lg text-[#E1E1E6]'>{form.getValues().subtitleRoullet}</p>
               )}
             </div>
-            <SpinWheel />
+            <SpinWheel valuesRoullet={form.getValues().names} />
           </div>
-          <SheetContent>
+          <SheetContent className='overflow-x-auto'>
             <SheetHeader>
               <SheetTitle>Configure sua roleta!</SheetTitle>
               <SheetDescription>
@@ -130,18 +149,41 @@ function App() {
                   />
               )}
               <div>
-                <Label htmlFor="titleroullet" className="text-right text-base">
+                <Label htmlFor="titleroullet" className="text-left text-base">
                   Nome dos itens ou pessoas na roleta
                 </Label>
                 <div className="grid w-full gap-1.5 mt-2">
-                  <Textarea placeholder="Digite aqui os nomes dos itens separado por linha" />
-                  <p className="text-sm text-muted-foreground text-[#50555A]">
-                    Digite 1 item ou pessoa por linha.
+                  <FormField
+                    control={form.control}
+                    name="names"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Digite aqui os nomes dos itens separado por linha" 
+                            value={formatArrayForTextArea(field.value)}
+                            onChange={(e) => {
+                              const transformedValue = transformArray(e)
+                              field.onChange(transformedValue);
+                            }}
+                            className='resize-none'
+                            rows={8}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <p className="text-sm text-muted-foreground text-[#50555A] mt-1">
+                    Digite 1 item ou pessoa por linha. Máximo: 8
                   </p>
+                  <div className='text-left'>
+                    <Badge variant="secondary">Quantidade atual: {form.getValues().names?.length}</Badge>
+                  </div>
                 </div>
               </div>
             </div>
-            <div  className="grid gap-5 py-4 px-2 mt-4">
+            <div  className="grid gap-5 py-4 px-2">
               <p className='font-semibold text-lg text-[#2E2E2E]'>Tema e cores</p>
               <FormField
                 control={form.control}
@@ -185,6 +227,10 @@ function App() {
             </SheetFooter>
           </SheetContent>
         </Sheet>
+        <Toaster
+          position="top-right"
+          reverseOrder={false}
+        />
       </Form>
     </main>
   )

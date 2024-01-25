@@ -5,5 +5,5 @@ export const roulletConfigSchema = z.object({
   backgroundColorRoullet: z.string().min(3),
   titleRoullet: z.string().min(2),
   subtitleRoullet: z.string(),
-  names: z.array(z.string())
+  names: z.array(z.string()).nullable()
 })
