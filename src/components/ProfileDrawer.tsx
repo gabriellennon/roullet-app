@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
+import UserPng from '../assets/user.png';
 import {
   Sheet,
   SheetClose,
@@ -10,6 +10,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
+import { useUserInfo } from "@/hooks/useUserInfo"
 import React, { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 
@@ -18,6 +19,7 @@ type ProfileDrawerProps = {
 }
 
 export const ProfileDrawer = ({ children }: ProfileDrawerProps) => {
+    const { setUserInfo, userInfo, setLogoutUser } = useUserInfo();
     const navigate = useNavigate();
     const [showButton, setShowButton] = useState(false);
 
@@ -25,10 +27,19 @@ export const ProfileDrawer = ({ children }: ProfileDrawerProps) => {
         navigate('/login');
     }
 
+    const handleLogout = () => {
+        setLogoutUser();
+        setShowButton(true);
+    }
+
     useEffect(() => {
         const userInfo = localStorage.getItem('@mySpin-UserInfo');
+
         setShowButton(userInfo ? false : true);
-    },[])
+        if(userInfo){
+            setUserInfo(JSON.parse(userInfo))
+        }
+    },[setUserInfo])
 
     return (
         <Sheet>
@@ -46,17 +57,18 @@ export const ProfileDrawer = ({ children }: ProfileDrawerProps) => {
                     </SheetDescription>
                 )}
             </SheetHeader>
-            {!showButton && (
-                <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="name" className="text-right">
-                            Name
-                        </Label>
-                    </div>
+            {!showButton && userInfo && (
+                <div className="flex flex-col gap-4 py-4 items-center justify-center">
+                    <img 
+                        src={userInfo.photoURL ?? UserPng}
+                        alt="Sua foto de perfil" 
+                        className="rounded-full w-24 h-24 border border-[#50555A] p-[0.2px]"
+                    />
+                    <p className="text-center font-medium text-slate-900 text-lg">Olá, bem vindo de volta <br/><span className="font-semibold">{userInfo.displayName}</span>!</p>
                 </div>
             )}
             <SheetFooter>
-                <SheetClose asChild>
+                <SheetClose asChild className="flex items-center justify-center w-full">
                     {showButton ? (
                         <div className="w-full pt-6">
                             <Button 
@@ -68,7 +80,7 @@ export const ProfileDrawer = ({ children }: ProfileDrawerProps) => {
                             </Button>
                         </div>
                     ):(
-                        <Button type="submit">Save changes</Button>
+                        <Button type="submit" onClick={handleLogout}>Sair</Button>
                     )}
                 </SheetClose>
             </SheetFooter>
