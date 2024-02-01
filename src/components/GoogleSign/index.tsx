@@ -3,28 +3,28 @@ import { auth, provider} from './config';
 import GoogleIcon from '../../assets/icongoogle.png';
 import { Button } from '../ui/button';
 import { useNavigate } from 'react-router-dom';
-// import { useState } from 'react';
+import { TUserInfo } from '@/utils/types';
+import { useUserInfo } from '@/hooks/useUserInfo';
 
 type GoogleSignProps = {
     isLoading?: boolean;
 }
 
 export function GoogleSign({ isLoading }: GoogleSignProps){
-    // Criar um contexto
-    // const [userInfo, setUserInfo] = useState<UserCredential | null>();
+    const { setUserInfo } = useUserInfo();
     const navigate = useNavigate()
 
     const handleSign = () => {
         signInWithPopup(auth,provider).then((data: UserCredential) => {
-            // setUserInfo(data);
             if(data.user.email){
                 const { email, displayName, photoURL, uid } = data.user;
-                const userInfo = {
+                const userInfo: TUserInfo = {
                     email, 
                     displayName, 
                     photoURL, 
                     uid
                 }
+                setUserInfo(userInfo)
                 localStorage.setItem('@mySpin-UserInfo', JSON.stringify(userInfo))
                 navigate('/')
             }
