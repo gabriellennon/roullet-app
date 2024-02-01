@@ -5,7 +5,8 @@ import { Label } from "./ui/label"
 import { Input } from "./ui/input"
 import { Button } from "./ui/button"
 
-import GoogleIcon from '../assets/icongoogle.png';
+
+import { GoogleSign } from "./GoogleSign"
 
 interface UserAuthFormProps extends React.HTMLAttributes<HTMLDivElement> {}
 
@@ -15,10 +16,6 @@ export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
   async function onSubmit(event: React.SyntheticEvent) {
     event.preventDefault()
     setIsLoading(true)
-
-    setTimeout(() => {
-      setIsLoading(false)
-    }, 3000)
   }
 
   return (
@@ -66,23 +63,7 @@ export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
           </span>
         </div>
       </div>
-      <Button 
-        variant="outline" 
-        type="button" 
-        disabled={isLoading}
-        className="flex gap-3"
-      >
-        {isLoading ? (
-          <div>icone carregando</div>
-        ) : (
-            <img 
-              src={GoogleIcon} 
-              alt="ícone de um G, logo da google" 
-              className="w-4"
-            />
-        )}{" "}
-        <p className="font-semibold text-[#50555A]">Entrar com Google</p>
-      </Button>
+      <GoogleSign isLoading={isLoading} />
     </div>
   )
 }
