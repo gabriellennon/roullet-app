@@ -7,7 +7,7 @@ import {
     SheetHeader,
     SheetTitle,
   } from "@/components/ui/sheet"
-  import React, { useState } from 'react'
+  import React, { useEffect, useState } from 'react'
   import { zodResolver } from "@hookform/resolvers/zod"
   import { useForm } from "react-hook-form"
   import * as z from "zod"
@@ -30,6 +30,10 @@ import {
   import { SpinWheel } from '../components/SpinWheel'
   import { formatArrayForTextArea, transformArrayToString } from '../utils/utils'
   import { Badge } from '../components/ui/badge'
+import { addConfigRoullet, getConfigRoullet } from "@/services/configRoullet.service"
+import { useUserInfo } from "@/hooks/useUserInfo"
+import { ResponseConfigUserData } from "@/utils/types"
+import { Skeleton } from "@/components/ui/skeleton"
   
   const INITIAL_VALUES = {
     backgroundColorGeral: '#00875F',
@@ -40,6 +44,8 @@ import {
   }
 
 export const Home = () => {
+  const { userInfo } = useUserInfo();
+    const [isLoading, setIsLoading] = useState(false);
     const [isShowConfig, setIsShowConfig] = useState({
       titleroullet: true,
       subtitleroullet: true
@@ -61,28 +67,26 @@ export const Home = () => {
       defaultValues: INITIAL_VALUES,
     })
   
-    function onSubmit(values: z.infer<typeof roulletConfigSchema>) {
-      // ANtes de salvar verificar text area usando essa funcao
-      // console.log(currentValue.includes('\n' || ' '));
+    async function onSubmit(values: z.infer<typeof roulletConfigSchema>) {
       if(values.names!.length < 8){
         toast.error("Opa! 🤔 Os nomes do itens na roleta estão abaixo de 8, por favor adicione até estar os 8.")
+      } else {
+        setIsLoading(true)
+        const userInfoLocal = localStorage.getItem('@mySpin-UserInfo');
+        if(userInfoLocal){
+          addConfigRoullet({ idUser: userInfo!.uid, body: values }).then(() => {
+            toast.success('Configuração salva com sucesso!')
+          }).catch((error) => {
+            console.log(error)
+          }).finally(() => {
+            setIsLoading(false)
+          })
+        } else {
+          // Pensar na execao
+        }
       }
-      console.log(values)
+    
     }
-  
-    // function transformArray(e: React.KeyboardEvent<HTMLTextAreaElement>){
-    //   const backspaceNoPressed = e.key !== "Backspace";
-    //   const currentValue = e.currentTarget.value;
-    //   const namesArray: string[] = [];
-  
-    //   if(backspaceNoPressed) {
-    //     const lengthNoSpaces = currentValue.replace(/ /g,"").length;
-    //     if ( lengthNoSpaces !== 0 && lengthNoSpaces % 4 === 0) {
-    //       namesArray.push(...namesArray, currentValue)
-    //       form.setValue('names', transformArrayToString(namesArray))
-    //     }
-    //   }
-    // }
   
     function transformArray(e: React.ChangeEvent<HTMLTextAreaElement>) {
       const currentValue = e.target.value;
@@ -91,6 +95,25 @@ export const Home = () => {
       form.setValue('names', valueToSave);
       return valueToSave;
     }
+
+    useEffect(() => {
+      setIsLoading(true);
+      const userInfoLocal = localStorage.getItem('@mySpin-UserInfo');
+      if(userInfo?.uid && userInfoLocal){
+        getConfigRoullet({ idUser: userInfo.uid }).then((response) => {
+          const resp: ResponseConfigUserData = response;
+          if(resp.body){
+            form.reset(resp.body)
+          }
+        }).catch((error) => {
+          console.log(error)
+        }).finally(() => {
+          setIsLoading(false);
+        })
+      } else {
+        setIsLoading(false);
+      }
+    },[userInfo, form])
   
     return (
       <main className='bg-[#00875F] min-h-screen flex flex-1 items-end justify-center flex-col px-12'>
@@ -101,9 +124,18 @@ export const Home = () => {
               className='bg-[#202024] flex flex-1 flex-col items-center justify-center w-full max-w-[1340px] h-[calc(100vh - 10rem)] mt-4 mb-20 mx-auto rounded-lg'
             >
               <div className='mb-8 text-center'>
-                <h1 className='font-bold text-4xl text-[#E1E1E6] uppercase'>{form.getValues().titleRoullet}</h1>
-                {!!form.getValues().subtitleRoullet.length && (
-                  <p className='text-lg text-[#E1E1E6]'>{form.getValues().subtitleRoullet}</p>
+                {isLoading ? (
+                  <div className="flex flex-col justify-center items-center gap-2">
+                    <Skeleton className="h-8 w-[350px] bg-slate-700" />
+                    <Skeleton className="h-6 w-[200px] bg-slate-700" />
+                  </div>
+                ): (
+                  <>
+                    <h1 className='font-bold text-4xl text-[#E1E1E6] uppercase'>{form.getValues().titleRoullet}</h1>
+                    {!!form.getValues().subtitleRoullet.length && (
+                      <p className='text-lg text-[#E1E1E6]'>{form.getValues().subtitleRoullet}</p>
+                    )}
+                  </>  
                 )}
               </div>
               <SpinWheel valuesRoullet={form.getValues().names} />
