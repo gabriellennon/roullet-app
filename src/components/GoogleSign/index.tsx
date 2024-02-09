@@ -11,7 +11,7 @@ type GoogleSignProps = {
 }
 
 export function GoogleSign({ isLoading }: GoogleSignProps){
-    const { setUserInfo } = useUserInfo();
+    const { setUserInfo, setIsLogged } = useUserInfo();
     const navigate = useNavigate()
 
     const handleSign = () => {
@@ -26,6 +26,7 @@ export function GoogleSign({ isLoading }: GoogleSignProps){
                 }
                 setUserInfo(userInfo)
                 localStorage.setItem('@mySpin-UserInfo', JSON.stringify(userInfo))
+                setIsLogged(true);
                 navigate('/')
             }
         })

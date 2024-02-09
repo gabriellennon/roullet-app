@@ -34,6 +34,8 @@ import { addConfigRoullet, getConfigRoullet } from "@/services/configRoullet.ser
 import { useUserInfo } from "@/hooks/useUserInfo"
 import { ResponseConfigUserData } from "@/utils/types"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { ExclamationTriangleIcon, ReloadIcon } from "@radix-ui/react-icons"
   
   const INITIAL_VALUES = {
     backgroundColorGeral: '#00875F',
@@ -44,7 +46,7 @@ import { Skeleton } from "@/components/ui/skeleton"
   }
 
 export const Home = () => {
-  const { userInfo } = useUserInfo();
+  const { userInfo, isLogged, setIsLogged } = useUserInfo();
     const [isLoading, setIsLoading] = useState(false);
     const [isShowConfig, setIsShowConfig] = useState({
       titleroullet: true,
@@ -82,7 +84,9 @@ export const Home = () => {
             setIsLoading(false)
           })
         } else {
-          // Pensar na execao
+          toast.success('Configuração salva com sucesso!');
+          localStorage.setItem('@mySpin-ConfigTem', JSON.stringify(values));
+          setIsLoading(true);
         }
       }
     
@@ -96,32 +100,58 @@ export const Home = () => {
       return valueToSave;
     }
 
+    function restoreDefaultConfigs(){
+      form.reset(INITIAL_VALUES);
+    }
+
     useEffect(() => {
       setIsLoading(true);
       const userInfoLocal = localStorage.getItem('@mySpin-UserInfo');
+
       if(userInfo?.uid && userInfoLocal){
         getConfigRoullet({ idUser: userInfo.uid }).then((response) => {
           const resp: ResponseConfigUserData = response;
           if(resp.body){
             form.reset(resp.body)
           }
+          setIsLogged(true)
         }).catch((error) => {
           console.log(error)
         }).finally(() => {
           setIsLoading(false);
         })
       } else {
+        const tempConfig = localStorage.getItem('@mySpin-ConfigTem')
+        if(tempConfig){
+          form.reset(JSON.parse(tempConfig));
+        }
         setIsLoading(false);
       }
-    },[userInfo, form])
+    },[userInfo, form, setIsLogged])
+
+    useEffect(() => {
+      const bgGeralElement = document.getElementById('bgGeral');
+      const bgRoulletElement = document.getElementById('bgRoullet');
+      if (bgGeralElement && bgRoulletElement) {
+        bgGeralElement.style.backgroundColor = form.getValues().backgroundColorGeral;
+        bgRoulletElement.style.backgroundColor = form.getValues().backgroundColorRoullet;
+      }
+    }, [form]);
   
     return (
-      <main className='bg-[#00875F] min-h-screen flex flex-1 items-end justify-center flex-col px-12'>
+      // Verificar o pq está ficando branco quando eu atualizo a cor
+      <main 
+        // className={`bg-[${form.getValues().backgroundColorGeral}] min-h-screen flex flex-1 items-end justify-center flex-col px-12`}
+        className='bg-[#00875F] min-h-screen flex flex-1 items-end justify-center flex-col px-12'
+        id="bgGeral"
+      >
         <Form {...form}>
           <Sheet>
             <HeaderSheet />
             <div 
+              // className={`bg-[${form.getValues().backgroundColorRoullet}] flex flex-1 flex-col items-center justify-center w-full max-w-[1340px] h-[calc(100vh - 10rem)] mt-4 mb-20 mx-auto rounded-lg`}
               className='bg-[#202024] flex flex-1 flex-col items-center justify-center w-full max-w-[1340px] h-[calc(100vh - 10rem)] mt-4 mb-20 mx-auto rounded-lg'
+              id="bgRoullet"
             >
               <div className='mb-8 text-center'>
                 {isLoading ? (
@@ -250,6 +280,17 @@ export const Home = () => {
                     </FormItem>
                   )}
                 />
+                <Button onClick={restoreDefaultConfigs} variant="outline">
+                  <ReloadIcon className="mr-2 h-4 w-4" /> Redefinir Configurações
+                </Button>
+                {!isLogged && (
+                  <Alert className="bg-yellow-100">
+                    <ExclamationTriangleIcon className="h-4 w-4" />
+                    <AlertDescription>
+                      Você não está logado, caso feche o site os dados não ficarão salvos. 
+                    </AlertDescription>
+                  </Alert>                  
+                )}
               </div>
               <SheetFooter className='mt-7'>
                 <SheetClose asChild>
