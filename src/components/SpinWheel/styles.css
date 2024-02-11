@@ -147,7 +147,7 @@
 
 .container .wheel .number span::after{
 
-    content: '$';
+    content: '';
 
     position: absolute;
 

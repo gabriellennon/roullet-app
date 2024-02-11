@@ -7,7 +7,7 @@ import {
     SheetHeader,
     SheetTitle,
   } from "@/components/ui/sheet"
-  import React, { useEffect, useState } from 'react'
+  import React, { useCallback, useEffect, useState } from 'react'
   import { zodResolver } from "@hookform/resolvers/zod"
   import { useForm } from "react-hook-form"
   import * as z from "zod"
@@ -42,7 +42,7 @@ import { ExclamationTriangleIcon, ReloadIcon } from "@radix-ui/react-icons"
     backgroundColorRoullet: '#202024',
     titleRoullet: 'Gire a roleta',
     subtitleRoullet: 'E garanta o seu prêmio!',
-    names: ['10','0','100','150','800','40','300','10']
+    names: ['$10','$0','$100','$150','$800','$40','$300','$10']
   }
 
 export const Home = () => {
@@ -86,7 +86,7 @@ export const Home = () => {
         } else {
           toast.success('Configuração salva com sucesso!');
           localStorage.setItem('@mySpin-ConfigTem', JSON.stringify(values));
-          setIsLoading(true);
+          setIsLoading(false);
         }
       }
     
@@ -100,8 +100,31 @@ export const Home = () => {
       return valueToSave;
     }
 
+    const setPostConfigRoullet = useCallback(() => {
+      setIsLoading(true);
+      getConfigRoullet({ idUser: userInfo!.uid })
+        .then((response) => {
+          const resp: ResponseConfigUserData = response;
+          if (resp.body) {
+            form.reset(resp.body);
+          }
+          setIsLogged(true);
+        })
+        .catch((error) => {
+          console.log(error);
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
+    }, [form, setIsLogged, setIsLoading, userInfo]);    
+
     function restoreDefaultConfigs(){
       form.reset(INITIAL_VALUES);
+      if(isLogged && userInfo) {
+        setPostConfigRoullet()
+      } else {
+        localStorage.setItem('@mySpin-ConfigTem', JSON.stringify(INITIAL_VALUES));
+      }
     }
 
     useEffect(() => {
@@ -109,17 +132,7 @@ export const Home = () => {
       const userInfoLocal = localStorage.getItem('@mySpin-UserInfo');
 
       if(userInfo?.uid && userInfoLocal){
-        getConfigRoullet({ idUser: userInfo.uid }).then((response) => {
-          const resp: ResponseConfigUserData = response;
-          if(resp.body){
-            form.reset(resp.body)
-          }
-          setIsLogged(true)
-        }).catch((error) => {
-          console.log(error)
-        }).finally(() => {
-          setIsLoading(false);
-        })
+        setPostConfigRoullet()
       } else {
         const tempConfig = localStorage.getItem('@mySpin-ConfigTem')
         if(tempConfig){
@@ -127,7 +140,7 @@ export const Home = () => {
         }
         setIsLoading(false);
       }
-    },[userInfo, form, setIsLogged])
+    },[userInfo, form, setIsLogged, setPostConfigRoullet])
 
     useEffect(() => {
       const bgGeralElement = document.getElementById('bgGeral');
